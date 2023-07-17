@@ -92,7 +92,8 @@ class QSOFit():
             Fe_flux_range=None, poly=False, BC=False, rej_abs_conti=False, rej_abs_line=False, initial_guess=None, tol=1e-10,
             n_pix_min_conti=100, param_file_name='qsopar.fits', MC=False, MCMC=False, save_fits_name=None,
             nburn=20, nsamp=200, nthin=10, epsilon_jitter=1e-4, linefit=True, save_result=True, plot_fig=True, save_fits_path='.',
-            save_fig=True, plot_corner=True, verbose=False, kwargs_plot={}, kwargs_conti_emcee={}, kwargs_line_emcee={}):
+            save_fig=True, plot_corner=True, verbose=False, kwargs_plot={}, kwargs_conti_emcee={}, kwargs_line_emcee={},
+            Fe_uv_fix=None, Fe_op_fix=None):
         
         """
         Fit the QSO spectrum and get different decomposed components and corresponding parameters
@@ -379,6 +380,11 @@ class QSOFit():
         self.plot_corner = plot_corner
         self.verbose = verbose
         self.param_file_name = param_file_name
+        
+        #Fixed parameters for the FeII fits
+        self.Fe_uv_fix = Fe_uv_fix
+        self.Fe_op_fix = Fe_op_fix
+
         
         # get the source name in plate-mjd-fiber, if no then None
         if name is None:
@@ -822,6 +828,28 @@ class QSOFit():
             fit_params['conti_pl_0'].vary = False
             fit_params['conti_pl_1'].vary = False
             fit_params['conti_pl_2'].vary = False
+            
+            
+            
+            
+        #Check if we will fix the Fe_uv parameters
+        if self.Fe_uv_fix is not None:
+            
+            keys = ['Fe_uv_norm', 'Fe_uv_FWHM', 'Fe_uv_shift']
+            for i, key in enumerate(keys):
+                if self.Fe_uv_fix[i] is not None:
+                    fit_params[key].value = self.Fe_uv_fix[i]
+                    fit_params[key].vary = False
+            
+            
+        #Check if we will fix the Fe_op parameters
+        if self.Fe_op_fix is not None:
+
+            keys = ['Fe_op_norm', 'Fe_op_FWHM', 'Fe_op_shift']
+            for i, key in enumerate(keys):
+                if self.Fe_op_fix[i] is not None:
+                    fit_params[key].value = self.Fe_op_fix[i]
+                    fit_params[key].vary = False
                         
         """
         Continuum components described by 14 parameters
