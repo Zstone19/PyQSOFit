@@ -93,7 +93,8 @@ class QSOFit():
             n_pix_min_conti=100, param_file_name='qsopar.fits', MC=False, MCMC=False, save_fits_name=None,
             nburn=20, nsamp=200, nthin=10, epsilon_jitter=1e-4, linefit=True, save_result=True, plot_fig=True, save_fits_path='.',
             save_fig=True, plot_corner=True, verbose=False, kwargs_plot={}, kwargs_conti_emcee={}, kwargs_line_emcee={},
-            Fe_uv_fix=None, Fe_op_fix=None):
+            Fe_uv_fix=None, Fe_op_fix=None, PL_fix=None,
+            Fe_uv_range=None, Fe_op_range=None, PL_range=None):
         
         """
         Fit the QSO spectrum and get different decomposed components and corresponding parameters
@@ -380,12 +381,44 @@ class QSOFit():
         self.plot_corner = plot_corner
         self.verbose = verbose
         self.param_file_name = param_file_name
-        
-        #Fixed parameters for the FeII fits
+
+        #Fixed parameters
         self.Fe_uv_fix = Fe_uv_fix
         self.Fe_op_fix = Fe_op_fix
+        self.PL_fix = PL_fix
 
+        #Set parameter ranges
+        self.Fe_uv_range = Fe_uv_range
+        self.Fe_op_range = Fe_op_range
+        self.PL_range = PL_range
         
+        default = [[0, 1e10], [1200, 18000], [-0.01, 0.01]]
+        if self.Fe_uv_range is None:
+            self.Fe_uv_range = default
+        else:
+            for i in range(len(self.Fe_uv_range)):
+                if self.Fe_uv_range[i] is None:
+                    self.Fe_uv_range[i] = default[i]
+            
+
+        default = [[0, 1e10], [1200, 18000], [-0.01, 0.01]]
+        if self.Fe_op_range is None:
+            self.Fe_op_range = default
+        else:
+            for i in range(len(self.Fe_op_range)):
+                if self.Fe_op_range[i] is None:
+                    self.Fe_op_range[i] = default[i]
+            
+
+        default = [[0, 1e10], [-5, 3]]
+        if self.PL_range is None:
+            self.PL_range = default
+        else:
+            for i in range(len(self.PL_range)):
+                if self.PL_range[i] is None:
+                    self.PL_range[i] = default[i]
+
+
         # get the source name in plate-mjd-fiber, if no then None
         if name is None:
             if np.array([self.plateid, self.mjd, self.fiberid]).any() is not None:
@@ -776,17 +809,17 @@ class QSOFit():
         
         fit_params = Parameters()
         # norm_factor, FWHM, and small shift of wavelength for the MgII Fe_template
-        fit_params.add('Fe_uv_norm', value=pp0[0], min=0, max=1e10)
-        fit_params.add('Fe_uv_FWHM', value=pp0[1], min=1200, max=18000)
-        fit_params.add('Fe_uv_shift', value=pp0[2], min=-0.01, max=0.01)        
+        fit_params.add('Fe_uv_norm', value=pp0[0], min=self.Fe_uv_range[0][0], max=self.Fe_uv_range[0][1])
+        fit_params.add('Fe_uv_FWHM', value=pp0[1], min=self.Fe_uv_range[1][0], max=self.Fe_uv_range[1][1])
+        fit_params.add('Fe_uv_shift', value=pp0[2], min=self.Fe_uv_range[2][0], max=self.Fe_uv_range[2][1])        
         # same as above but for the Hbeta/Halpha Fe template
-        fit_params.add('Fe_op_norm', value=pp0[3], min=0, max=1e10)
-        fit_params.add('Fe_op_FWHM', value=pp0[4], min=1200, max=18000)
-        fit_params.add('Fe_op_shift', value=pp0[5], min=-0.01, max=0.01)
+        fit_params.add('Fe_op_norm', value=pp0[3], min=self.Fe_op_range[0][0], max=self.Fe_op_range[0][1])
+        fit_params.add('Fe_op_FWHM', value=pp0[4], min=self.Fe_op_range[1][0], max=self.Fe_op_range[1][1])
+        fit_params.add('Fe_op_shift', value=pp0[5], min=self.Fe_op_range[2][0], max=self.Fe_op_range[2][1])
         # norm_factor for continuum f_lambda = (lambda/3000.0)^{-alpha}
-        fit_params.add('PL_norm', value=pp0[6], min=0, max=1e10)
+        fit_params.add('PL_norm', value=pp0[6], min=self.PL_range[0][0], max=self.PL_range[0][1])
         # slope for the power-law continuum
-        fit_params.add('PL_slope', value=pp0[7], min=-5, max=3)
+        fit_params.add('PL_slope', value=pp0[7], min=self.PL_range[1][0], max=self.PL_range[1][1])
         # norm, Te and Tau_e for the Balmer continuum at <3646 A
         fit_params.add('Blamer_norm', value=pp0[8], min=0, max=1e10)
         fit_params.add('Balmer_Te', value=pp0[9], min=10000, max=50000)
@@ -830,7 +863,9 @@ class QSOFit():
             fit_params['conti_pl_2'].vary = False
             
             
-            
+        """
+        Fixing parameters
+        """
             
         #Check if we will fix the Fe_uv parameters
         if self.Fe_uv_fix is not None:
@@ -850,7 +885,17 @@ class QSOFit():
                 if self.Fe_op_fix[i] is not None:
                     fit_params[key].value = self.Fe_op_fix[i]
                     fit_params[key].vary = False
-                        
+                    
+                    
+        #Check if we will fix the power law parameters
+        if self.PL_fix is not None:
+            
+            keys = ['PL_norm', 'PL_slope']
+            for i, key in enumerate(keys):
+                if self.PL_fix[i] is not None:
+                    fit_params[key].value = self.PL_fix[i]
+                    fit_params[key].vary = False
+            
         """
         Continuum components described by 14 parameters
          pp[0]: norm_factor for the MgII Fe_template
