@@ -1252,31 +1252,36 @@ class QSOFit():
 
                             # Get parameter limits
                             ln_lambda_0 = np.log(linelist['lambda'][ind_line][n]) # ln line center
-                            voff = linelist['voff'][ind_line][n]
+                            #voff = linelist['voff'][ind_line][n]
 
                             # It's usually a good idea to jitter the parameters a bit
                             # sigma
-                            sig_0 = linelist['inisig'][ind_line][n] + np.abs(np.random.normal(0, self.epsilon_jitter))
+                            sig_0 = linelist['inisig'][ind_line][n] #+ np.abs(np.random.normal(0, self.epsilon_jitter))
                             sig_low = linelist['minsig'][ind_line][n]
                             sig_up = linelist['maxsig'][ind_line][n]
 
                              # scale
-                            scale_0 = linelist['inisca'][ind_line][n] + np.abs(np.random.normal(0, self.epsilon_jitter))
+                            scale_0 = linelist['inisca'][ind_line][n] #+ np.abs(np.random.normal(0, self.epsilon_jitter))
                             scale_low = linelist['minsca'][ind_line][n]
                             scale_up = linelist['maxsca'][ind_line][n]
                             
-                            vary = bool(linelist['vary'][ind_line][n])
+                            vary_sig = bool(linelist['varysig'][ind_line][n])
+                            vary_scale = bool(linelist['varysca'][ind_line][n])
+                            vary_dw = bool(linelist['varydw'][ind_line][n])
+                            
 
                             # change in wav relative to complex center
-                            dwave_0 = np.random.normal(0, self.epsilon_jitter)
+                            dwave_0 = linelist['inidw'][ind_line][n] #+ np.abs(np.random.normal(0, self.epsilon_jitter))
+                            dwave_low = linelist['mindw'][ind_line][n]
+                            dwave_up = linelist['maxdw'][ind_line][n]
 
                             # Number of Gaussians loop
                             for nn in range(ngauss_fit[n]):
 
-                                fit_params.add(f'{line_name}_{nn+1}_scale', value=scale_0, min=scale_low, max=scale_up, vary=vary)
-                                fit_params.add(f'{line_name}_{nn+1}_dwave', value=dwave_0, min=-voff, max=voff, vary=vary)
+                                fit_params.add(f'{line_name}_{nn+1}_scale', value=scale_0, min=scale_low, max=scale_up, vary=vary_scale)
+                                fit_params.add(f'{line_name}_{nn+1}_dwave', value=dwave_0, min=dwave_low, max=dwave_up, vary=vary_sig)
                                 ln_lambda_0s.append(ln_lambda_0)
-                                fit_params.add(f'{line_name}_{nn+1}_sigma', value=sig_0, min=sig_low, max=sig_up, vary=vary)
+                                fit_params.add(f'{line_name}_{nn+1}_sigma', value=sig_0, min=sig_low, max=sig_up, vary=vary_dw)
                                                             
                     """
                     Tie lines
@@ -1294,7 +1299,7 @@ class QSOFit():
                         
                         line_name = linelist['linename'][ind_line][n] # Must be unique
                         
-                        # Tie velocity
+                        # Tie velocity offsets
                         vindex = linelist['vindex'][ind_line][n]
                         
                         if vindex > 0:
@@ -1351,6 +1356,7 @@ class QSOFit():
                                 # Don't assign expr constraint to the first line, which has already been constrained
                                 if (f'{line_name}_{nn+1}_scale' != expr_base):
                                     fit_params[f'{line_name}_{nn+1}_scale'].expr = expr
+                                    
                         
                     """
                     Perform the MLE fitting while optionally iteratively masking absorption pixels
