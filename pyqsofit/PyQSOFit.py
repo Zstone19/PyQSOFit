@@ -2038,8 +2038,10 @@ class QSOFit():
         else:
             if self.decomposed == False:
                 plot_bottom = self.flux.min()
+                plot_top = self.flux.max()
             else:
                 plot_bottom = min(self.host.min(), self.flux.min())
+                plot_top = max(self.host.max(), self.flux.max())
         
         if ylims is None:
             ylims = [plot_bottom*0.9, plot_top*1.1]
