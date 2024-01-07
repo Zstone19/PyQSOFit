@@ -2037,10 +2037,10 @@ class QSOFit():
             plot_bottom = np.min([-1, -3*mad])
         else:
             if self.decomposed == False:
-                plot_bottom = self.flux.min()
+                plot_bottom = f_conti_model_eval.min
                 plot_top = self.flux.max()
             else:
-                plot_bottom = min(self.host.min(), self.flux.min())
+                plot_bottom = min(self.host.min(), f_conti_model_eval.min())
                 plot_top = max(self.host.max(), self.flux.max())
         
         if ylims is None:
