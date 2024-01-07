@@ -886,15 +886,16 @@ class QSOFit():
                     fit_params[key].value = self.Fe_op_fix[i]
                     fit_params[key].vary = False
                     
-                    
+
         #Check if we will fix the power law parameters
         if self.PL_fix is not None:
-            
-            keys = ['PL_norm', 'PL_slope']
-            for i, key in enumerate(keys):
-                if self.PL_fix[i] is not None:
-                    fit_params[key].value = self.PL_fix[i]
-                    fit_params[key].vary = False
+            if self.PL_fix[0] is not None:
+                fit_params['PL_norm'].value = self.PL_fix[0]
+                fit_params['PL_norm'].vary = False
+                
+            if self.PL_fix[1] is not None:
+                fit_params['PL_slope'].value = self.PL_fix[1]
+                fit_params['PL_slope'].vary = False
             
         """
         Continuum components described by 14 parameters
